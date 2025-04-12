@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/components/ui/sonner';
 import { X } from 'lucide-react';
+import { toast } from '@/lib/toast';
 import { Constraint } from '@/types';
 import { saveConstraint, getConstraints, removeConstraint } from '@/lib/indexedDB';
 

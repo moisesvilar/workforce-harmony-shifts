@@ -2,8 +2,8 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/components/ui/sonner';
 import { FileUp, FileCheck } from 'lucide-react';
+import { toast } from '@/lib/toast';
 import { parseExcelFile, processEmployeeData } from '@/lib/excelParser';
 import { saveEmployees } from '@/lib/indexedDB';
 import { Employee } from '@/types';

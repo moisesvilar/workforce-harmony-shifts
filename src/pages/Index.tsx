@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppStep, Employee, Constraint, EmployeeShift } from '@/types';
 import StepIndicator from '@/components/StepIndicator';
@@ -7,7 +6,7 @@ import DefineConstraints from '@/components/DefineConstraints';
 import GenerateSchedule from '@/components/GenerateSchedule';
 import DisplayResults from '@/components/DisplayResults';
 import { initDB, getEmployees, getConstraints, getShifts } from '@/lib/indexedDB';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/lib/toast';
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState(AppStep.UPLOAD_EMPLOYEE_DATA);
@@ -16,23 +15,19 @@ const Index = () => {
   const [shifts, setShifts] = useState<EmployeeShift[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize IndexedDB and check for existing data on mount
   useEffect(() => {
     const checkExistingData = async () => {
       try {
         await initDB();
         
-        // Check for existing employees
         const savedEmployees = await getEmployees();
         if (savedEmployees.length > 0) {
           setEmployees(savedEmployees);
           setCurrentStep(AppStep.DEFINE_CONSTRAINTS);
           
-          // Check for existing constraints
           const savedConstraints = await getConstraints();
           setConstraints(savedConstraints);
           
-          // Check for existing shifts
           const savedShifts = await getShifts();
           if (savedShifts.length > 0) {
             setShifts(savedShifts);
