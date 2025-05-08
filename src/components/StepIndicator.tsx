@@ -1,13 +1,13 @@
-
 import React from 'react';
 import { AppStep } from '../types';
 import { cn } from '../lib/utils';
 
 interface StepIndicatorProps {
   currentStep: AppStep;
+  onStepClick?: (step: AppStep) => void;
 }
 
-const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
+const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onStepClick }) => {
   const steps = [
     { label: 'Upload Data', step: AppStep.UPLOAD_EMPLOYEE_DATA },
     { label: 'Define Constraints', step: AppStep.DEFINE_CONSTRAINTS },
@@ -19,9 +19,13 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
     <div className="w-full py-6">
       <div className="flex justify-between items-center">
         {steps.map((step, index) => (
-          <React.Fragment key={step.step}>
+          <div key={step.step} className="step-container">
             {/* Step circle */}
-            <div className="flex flex-col items-center">
+            <div 
+              className="flex flex-col items-center"
+              onClick={() => onStepClick && onStepClick(step.step)}
+              style={{ cursor: onStepClick ? 'pointer' : 'default' }}
+            >
               <div
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
@@ -51,7 +55,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
                 )}
               />
             )}
-          </React.Fragment>
+          </div>
         ))}
       </div>
     </div>

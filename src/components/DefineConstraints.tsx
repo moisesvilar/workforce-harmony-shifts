@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { X } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { Constraint } from '@/types';
 import { saveConstraint, getConstraints, removeConstraint } from '@/lib/indexedDB';
+import { analyzeConstraint } from '@/lib/constraintService';
 
 interface DefineConstraintsProps {
   onComplete: (constraints: Constraint[]) => void;
@@ -16,6 +16,7 @@ const DefineConstraints: React.FC<DefineConstraintsProps> = ({ onComplete }) => 
   const [constraintText, setConstraintText] = useState('');
   const [constraints, setConstraints] = useState<Constraint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Load existing constraints on mount
   useEffect(() => {
@@ -49,18 +50,40 @@ const DefineConstraints: React.FC<DefineConstraintsProps> = ({ onComplete }) => 
 
     try {
       setIsLoading(true);
+      setIsAnalyzing(true);
+      
+      // Analizar la restricción con el servicio web
+      let jsonData = null;
+      try {
+        jsonData = await analyzeConstraint(constraintText.trim());
+        // Si llegamos aquí, significa que la restricción se analizó correctamente
+      } catch (error) {
+        console.error('Error analyzing constraint:', error);
+        toast.warning('Could not analyze the constraint format, but it will be saved as text');
+        // Continuamos aunque no se haya podido analizar
+      }
+      
       const newConstraint: Constraint = {
         id: Date.now().toString(), // Simple unique ID
-        text: constraintText.trim()
+        text: constraintText.trim(),
+        jsonData: jsonData
       };
 
       await saveConstraint(newConstraint);
       setConstraints([...constraints, newConstraint]);
       setConstraintText('');
+      setIsAnalyzing(false);
       setIsLoading(false);
+      
+      if (jsonData) {
+        toast.success('Constraint added and formatted successfully');
+      } else {
+        toast.info('Constraint added as text only');
+      }
     } catch (error) {
       console.error('Error adding constraint:', error);
       toast.error('Failed to add constraint');
+      setIsAnalyzing(false);
       setIsLoading(false);
     }
   };
@@ -120,7 +143,7 @@ const DefineConstraints: React.FC<DefineConstraintsProps> = ({ onComplete }) => 
                 onClick={handleAddConstraint}
                 disabled={isLoading || !constraintText.trim()}
               >
-                Add
+                {isAnalyzing ? 'Analyzing...' : 'Add'}
               </Button>
             </div>
           </div>
@@ -135,7 +158,12 @@ const DefineConstraints: React.FC<DefineConstraintsProps> = ({ onComplete }) => 
                   key={constraint.id}
                   className="flex items-start justify-between p-2 rounded-md bg-harmony-50"
                 >
-                  <span className="text-sm text-harmony-700">{constraint.text}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-harmony-700">{constraint.text}</span>
+                    {constraint.jsonData && (
+                      <span className="text-xs text-green-600 mt-1">✓ Formalized</span>
+                    )}
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"

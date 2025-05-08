@@ -65,6 +65,22 @@ const Index = () => {
     setCurrentStep(AppStep.UPLOAD_EMPLOYEE_DATA);
   };
 
+  const handleStepClick = (step: AppStep) => {
+    if (step <= currentStep) {
+      setCurrentStep(step);
+    } else {
+      if (step === AppStep.DEFINE_CONSTRAINTS && employees.length > 0) {
+        setCurrentStep(step);
+      } else if (step === AppStep.GENERATE_SCHEDULE && constraints.length > 0) {
+        setCurrentStep(step);
+      } else if (step === AppStep.DISPLAY_RESULTS && shifts.length > 0) {
+        setCurrentStep(step);
+      } else {
+        toast.error('Completa los pasos anteriores primero');
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -83,7 +99,7 @@ const Index = () => {
         <p className="text-harmony-600">Automate shift scheduling for your team</p>
       </div>
       
-      <StepIndicator currentStep={currentStep} />
+      <StepIndicator currentStep={currentStep} onStepClick={handleStepClick} />
       
       <div className="py-4">
         {currentStep === AppStep.UPLOAD_EMPLOYEE_DATA && (

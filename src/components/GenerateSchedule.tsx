@@ -1,13 +1,12 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, CheckCircle2 } from 'lucide-react';
+import { Calendar, CheckCircle2, Download, AlertTriangle } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { Employee, Constraint, EmployeeShift } from '@/types';
-import { generateShifts } from '@/lib/shiftGenerator';
-import { saveShifts } from '@/lib/indexedDB';
+import { generateShifts, ShiftGeneratorError } from '@/lib/shiftGenerator';
+import { saveShifts, getEmployees, getConstraints } from '@/lib/indexedDB';
 
 interface GenerateScheduleProps {
   employees: Employee[];
@@ -25,6 +24,7 @@ const GenerateSchedule: React.FC<GenerateScheduleProps> = ({
   const [currentEmployee, setCurrentEmployee] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const [generatedShifts, setGeneratedShifts] = useState<EmployeeShift[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleGenerateSchedule = async () => {
     if (employees.length === 0) {
@@ -36,6 +36,7 @@ const GenerateSchedule: React.FC<GenerateScheduleProps> = ({
       setIsGenerating(true);
       setProgress(0);
       setIsComplete(false);
+      setErrorMessage(null);
 
       // Generate shifts with progress tracking
       const shifts = await generateShifts(employees, constraints, (employeeName, progressPercent) => {
@@ -52,13 +53,69 @@ const GenerateSchedule: React.FC<GenerateScheduleProps> = ({
       toast.success('Schedule generation complete!');
     } catch (error) {
       console.error('Error generating schedules:', error);
-      toast.error('Failed to generate schedules');
       setIsGenerating(false);
+      
+      // Manejar errores específicos del generador
+      if (error instanceof ShiftGeneratorError) {
+        setErrorMessage(error.message);
+      } else {
+        toast.error('Failed to generate schedules');
+      }
     }
   };
 
   const handleViewResults = () => {
     onComplete(generatedShifts);
+  };
+
+  const downloadJsonFile = (data: any, filename: string) => {
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadEmployees = async () => {
+    try {
+      // Obtener todos los empleados de IndexedDB
+      const allEmployees = await getEmployees();
+      
+      if (allEmployees.length === 0) {
+        toast.warning('No hay datos de empleados para descargar');
+        return;
+      }
+      
+      downloadJsonFile(allEmployees, 'workforce_employees.json');
+      toast.success('Datos de empleados descargados con éxito');
+    } catch (error) {
+      console.error('Error al descargar empleados:', error);
+      toast.error('Error al descargar datos de empleados');
+    }
+  };
+
+  const handleDownloadConstraints = async () => {
+    try {
+      // Obtener todas las restricciones de IndexedDB
+      const allConstraints = await getConstraints();
+      
+      if (allConstraints.length === 0) {
+        toast.warning('No hay datos de restricciones para descargar');
+        return;
+      }
+      
+      downloadJsonFile(allConstraints, 'workforce_constraints.json');
+      toast.success('Datos de restricciones descargados con éxito');
+    } catch (error) {
+      console.error('Error al descargar restricciones:', error);
+      toast.error('Error al descargar datos de restricciones');
+    }
   };
 
   return (
@@ -85,6 +142,16 @@ const GenerateSchedule: React.FC<GenerateScheduleProps> = ({
           </div>
         )}
 
+        {errorMessage && (
+          <div className="bg-red-50 p-4 rounded-lg flex items-start">
+            <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-red-700 font-medium">Error en la generación de horarios</p>
+              <p className="text-red-600 text-sm mt-1">{errorMessage}</p>
+            </div>
+          </div>
+        )}
+
         {isComplete && (
           <div className="bg-green-50 p-4 rounded-lg flex items-center">
             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
@@ -92,7 +159,27 @@ const GenerateSchedule: React.FC<GenerateScheduleProps> = ({
           </div>
         )}
       </CardContent>
-      <CardFooter className="justify-center">
+      <CardFooter className="justify-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-harmony-700"
+          onClick={handleDownloadEmployees}
+        >
+          <Download className="h-4 w-4 mr-1" />
+          Download employee data
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-harmony-700"
+          onClick={handleDownloadConstraints}
+        >
+          <Download className="h-4 w-4 mr-1" />
+          Download constraints data
+        </Button>
+        
         {!isComplete ? (
           <Button
             variant="default"
